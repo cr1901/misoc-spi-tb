@@ -3,6 +3,11 @@ $py(tmp = r.ns.get_name(field))\
 $(tmp)\
 $endmacro\
 \
+$macro(find, module, name)\
+$py(tmp = fs(module, name))\
+$(tmp)\
+$endmacro\
+\
 $macro(rst, name)\
 $py(tmp = r.ns.get_name(ResetSignal(name)))\
 $(tmp)\

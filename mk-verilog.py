@@ -29,10 +29,10 @@ if __name__ == "__main__":
     dut.submodules.bus = bus = CSRBank(dut.get_csrs())
     # from migen.fhdl.verilog import convert
 
-    # r = convert(dut, ios = {pads.clk, pads.cs_n, pads.mosi, pads.miso,
-    #                         dut.bus.bus.adr, dut.bus.bus.we, dut.bus.bus.dat_r,
-    #                         dut.bus.bus.dat_w})
+    #  = mival.find_signal(dut.spi, "write0")
     r = mival.annotate(dut, "asserts.v", ios = {pads.clk, pads.cs_n, pads.mosi, pads.miso,
                             dut.bus.bus.adr, dut.bus.bus.we, dut.bus.bus.dat_r,
                             dut.bus.bus.dat_w})
+    sig = mival.find_signal(dut.spi, "write0")
+    # (r.ns.get_name(mival.find_signal(dut.spi, "write0")))
     r.write("spi-master.v")

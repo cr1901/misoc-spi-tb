@@ -2,14 +2,89 @@ import os.path
 from operator import itemgetter
 
 from migen import *
-from migen.fhdl.structure import _Fragment
+from migen.fhdl.structure import *
+from migen.fhdl.structure import _Assign, _Operator, _Fragment, _Slice
 from migen.fhdl.conv_output import ConvOutput
 from migen.fhdl.verilog import convert
 import pyexpander.lib as pyexl
 import pyexpander.parser as pyexp
 
 
-# class MivalParser()
+# Internal signals that aren't members of a module are still in the namespace.
+# Make a best effort to search for it.
+# TODO: Improve chances of success. Also try looking for anonymous submodules.
+def find_signal(m, name):
+    def recurse_until_signal(fr):
+        def flatten_or_extend(ls, new):
+            if isinstance(new, list):
+                ls.extend(new)
+            else:
+                ls.append(new)
+
+        sigs = []
+        # print(fr)
+        if isinstance(fr, _Assign):
+            for op in (fr.l, fr.r):
+                if not isinstance(op, Signal):
+                    flatten_or_extend(sigs, recurse_until_signal(op))
+                else:
+                    flatten_or_extend(sigs, op)
+            return sigs
+
+        elif isinstance(fr, _Operator):
+            for op in fr.operands:
+                if not isinstance(op, Signal):
+                    flatten_or_extend(sigs, recurse_until_signal(op))
+                else:
+                    flatten_or_extend(sigs, op)
+            return sigs
+
+        elif isinstance(fr, If):
+            for op in (fr.cond, fr.t, fr.f):
+                if not isinstance(op, Signal):
+                    flatten_or_extend(sigs, recurse_until_signal(op))
+                else:
+                    flatten_or_extend(sigs, op)
+            return sigs
+
+        elif isinstance(fr, list):
+            for l in fr:
+                if not isinstance(l, Signal):
+                    flatten_or_extend(sigs, recurse_until_signal(l))
+                else:
+                    flatten_or_extend(sigs, l)
+            return sigs
+
+        elif isinstance(fr, (_Slice, Constant)):
+            # Constant isn't a named signal, and no more recursion can be
+            # done, so return.
+            return []
+
+        else:
+            raise ValueError("Unknown node encountered: " + str(type(fr)))
+
+    found_sigs = []
+    for fr in m._fragment.comb:
+        found_sigs.extend(recurse_until_signal(fr))
+
+    for _, fr in m._fragment.sync.items():
+        found_sigs.extend(recurse_until_signal(fr))
+
+    candidates = []
+    ids = set()
+    for sig in found_sigs:
+        if sig.backtrace[-1][0] == name:
+            if not id(sig) in ids:
+                candidates.append(sig)
+                ids |= {id(sig)}
+
+    if len(candidates) == 0:
+        raise ValueError("Unable to identify possible signal candidate. You must manually write out signal name.")
+    elif len(candidates) > 1:
+        raise ValueError("More than one possible signal candidate. You must manually write out signal name.")
+    else:
+        return candidates[0]
+
 
 
 # Wrapper class over Migen's verilog ConvOutput class to
@@ -73,6 +148,7 @@ def annotate(module_or_conv, asserts, **kwargs):
                 "m" : module_or_conv,
                 "r" : old_conv,
                 "gn" : old_conv.ns.get_name,
+                "fs" : find_signal,
                 "ResetSignal" : ResetSignal,
                 "ClockSignal" : ClockSignal
             },

@@ -2,7 +2,7 @@ initial assume ($rst("sys") == 1);
 
 always @* begin
     /* if (($dut(m.spi.bits.n_read) == 0) && ($dut(m.spi.bits.n_write) == 0)) begin
-        assert (\$dut(m.spi.bits.write0) == 0);
+        assert (\$find(m.spi.bits.write0) == 0);
     end */
 
     if (($dut(m._active.status) == 1)) begin
