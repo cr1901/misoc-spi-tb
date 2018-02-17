@@ -4,7 +4,7 @@ $(tmp)\
 $endmacro\
 \
 $macro(find, module, name)\
-$py(tmp = r.ns.get_name(fs(module, name)))\
+$py(tmp = r.ns.get_name(find_signal(module, name)))\
 $(tmp)\
 $endmacro\
 \
