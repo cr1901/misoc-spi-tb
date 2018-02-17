@@ -34,5 +34,5 @@ if __name__ == "__main__":
                             dut.bus.bus.adr, dut.bus.bus.we, dut.bus.bus.dat_r,
                             dut.bus.bus.dat_w})
     sig = mival.find_signal(dut.spi, "write0")
-    # (r.ns.get_name(mival.find_signal(dut.spi, "write0")))
+    # print(r.ns.get_name(mival.find_signal(dut.spi, "write0")))
     r.write("spi-master.v")

@@ -47,6 +47,29 @@ def find_signal(m, name):
                     flatten_or_extend(sigs, op)
             return sigs
 
+        elif isinstance(fr, Case):
+            for _, c in fr.cases.items():
+                if not isinstance(c, Signal):
+                    flatten_or_extend(sigs, recurse_until_signal(c))
+                else:
+                    flatten_or_extend(sigs, c)
+            return sigs
+
+        elif isinstance(fr, Replicate):
+            if not isinstance(fr.v, Signal):
+                flatten_or_extend(sigs, recurse_until_signal(fr.v))
+            else:
+                flatten_or_extend(sigs, fr.v)
+            return sigs
+
+        elif isinstance(fr, Cat):
+            for c in fr.l:
+                if not isinstance(c, Signal):
+                    flatten_or_extend(sigs, recurse_until_signal(c))
+                else:
+                    flatten_or_extend(sigs, c)
+            return sigs
+
         elif isinstance(fr, list):
             for l in fr:
                 if not isinstance(l, Signal):

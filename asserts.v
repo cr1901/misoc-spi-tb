@@ -2,7 +2,7 @@ initial assume ($rst("sys") == 1);
 
 always @* begin
     /* if (($dut(m.spi.bits.n_read) == 0) && ($dut(m.spi.bits.n_write) == 0)) begin
-        assert (\$find(m.spi.bits.write0) == 0);
+        assert ($find(m.spi, "write0") == 0);
     end */
 
     if (($dut(m._active.status) == 1)) begin
@@ -10,18 +10,18 @@ always @* begin
     end
 
     // User's responsibility to query pending.
-    if ((pending == 1)) begin
-        assume(data_write_re == 0);
+    if ($find(m, "pending") == 1)) begin
+        assume($dut(m._data_write.re) == 0);
     end
 end
 
 //assert property ()
-assert property (spi_cnt <= spi_load);
+assert property ($find(m.spi.cg, "cnt") <= $dut(m.spi.cg.load));
 
 // Temporary assumptions
-assume property (clk_div_read_storage == 5);
-assume property (clk_div_write_storage == 3);
-assume property (clk_polarity_storage == 0);
+assume property ($dut(m._clk_div_read.storage) == 5);
+assume property ($dut(m._clk_div_write.storage) == 3);
+assume property ($dut(m._clk_polarity.storage) == 0);
 
 
 // Ensure sys_clk is always ticking.
