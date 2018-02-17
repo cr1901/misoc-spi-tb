@@ -43,24 +43,30 @@ if __name__ == "__main__":
 initial assume ({rst} == 1);
 
 always @* begin
-    if (({} == 0) && ({} == 0)) begin
+    /* if (({} == 0) && ({} == 0)) begin
         assert (spi_write0 == 0);
-    end
+    end */
 
     if (({act} == 1)) begin
         assume ({we} == 0);
     end
+
+    // User's responsibility to query pending.
+    if ((pending == 1)) begin
+        assume(data_write_re == 0);
+    end
 end
 
-
+//assert property ()
+assert property (spi_cnt <= spi_load);
 
 // Temporary assumptions
-assume property (clk_div_read_storage == 1);
-assume property (clk_div_write_storage == 0);
+assume property (clk_div_read_storage == 5);
+assume property (clk_div_write_storage == 3);
 assume property (clk_polarity_storage == 0);
-assume property (spi_cnt <= spi_load);
 
-// Clock fix
+
+// Ensure sys_clk is always ticking.
 reg last_clk = 0;
 always @($global_clock) begin
     last_clk <= {clk};
