@@ -1,6 +1,7 @@
 from migen import *
 from misoc.interconnect.csr_bus import *
 from misoc.cores.spi import SPIMaster
+import mival
 
 class _TestPads:
     def __init__(self):
@@ -26,62 +27,12 @@ if __name__ == "__main__":
     dut = SPIMaster(pads)
     dut.comb += pads.miso.eq(pads.mosi)
     dut.submodules.bus = bus = CSRBank(dut.get_csrs())
-    from migen.fhdl.verilog import convert
+    # from migen.fhdl.verilog import convert
 
-    r = convert(dut, ios = {pads.clk, pads.cs_n, pads.mosi, pads.miso,
+    # r = convert(dut, ios = {pads.clk, pads.cs_n, pads.mosi, pads.miso,
+    #                         dut.bus.bus.adr, dut.bus.bus.we, dut.bus.bus.dat_r,
+    #                         dut.bus.bus.dat_w})
+    r = mival.annotate(dut, "asserts.v", ios = {pads.clk, pads.cs_n, pads.mosi, pads.miso,
                             dut.bus.bus.adr, dut.bus.bus.we, dut.bus.bus.dat_r,
                             dut.bus.bus.dat_w})
-
-    lines = str(r).rsplit("\n",3)[0]  # Remove "endmodule" so I can put my proofs next.
-
-    # Append proofs. Try to query namespace if possible.
-    gn = r.ns.get_name
-    proofs = """
-// Assumptions and assertions follow:
-
-`ifdef FORMAL
-initial assume ({rst} == 1);
-
-always @* begin
-    /* if (({} == 0) && ({} == 0)) begin
-        assert (spi_write0 == 0);
-    end */
-
-    if (({act} == 1)) begin
-        assume ({we} == 0);
-    end
-
-    // User's responsibility to query pending.
-    if ((pending == 1)) begin
-        assume(data_write_re == 0);
-    end
-end
-
-//assert property ()
-assert property (spi_cnt <= spi_load);
-
-// Temporary assumptions
-assume property (clk_div_read_storage == 5);
-assume property (clk_div_write_storage == 3);
-assume property (clk_polarity_storage == 0);
-
-
-// Ensure sys_clk is always ticking.
-reg last_clk = 0;
-always @($global_clock) begin
-    last_clk <= {clk};
-    assume(last_clk != {clk});
-end
-`endif
-
-// End assumptions and assertions
-
-""".format(
-gn(dut.spi.bits.n_read), gn(dut.spi.bits.n_write),
-act=gn(dut._active.status), we=gn(dut.bus.bus.we),
-rst=gn(ResetSignal()),
-clk=gn(ClockSignal()),
-)
-
-    with open("spi-master.v", "w") as fp:
-        fp.write(lines + proofs + "endmodule\n")
+    r.write("spi-master.v")
